@@ -47,11 +47,11 @@ def generate_positions_real_env():
 def simulate_pyroomacoustics_ir(
     output_path,
     room_dim=(6.110, 8.807, 2.7),
-    sampling_rate=48000,
+    sampling_rate=16000,
     max_order=10,
     e_absorption=0.0055,
     mic_num=8,
-    ir_len=4800
+    ir_len=1600
 ):
     tx_all, mic_centers_all, rx_all = generate_positions_real_env()
 
@@ -96,4 +96,4 @@ def simulate_pyroomacoustics_ir(
                 )
 
 if __name__ == "__main__":
-    simulate_pyroomacoustics_ir(output_path="./outputs/real_env_avr")
+    simulate_pyroomacoustics_ir(output_path="./outputs/real_env_avr_16kHz")

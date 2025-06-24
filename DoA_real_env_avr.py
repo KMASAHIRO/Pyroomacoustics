@@ -10,7 +10,7 @@ def load_ir_npz(file_path):
 
 def estimate_doa_for_algorithms(
     rx_folder,
-    fs=48000,
+    fs=16000,
     n_fft=512,
     mic_radius=0.0365,
     algo_names=None
@@ -70,8 +70,8 @@ def estimate_doa_for_algorithms(
     return result_per_algo
 
 def run_doa_all_tx(
-    base_dir="./outputs/real_env_avr",
-    fs=48000,
+    base_dir="./outputs/real_env_avr_16kHz",
+    fs=16000,
     n_fft=512,
     mic_radius=0.0365,
     algo_names=None,
