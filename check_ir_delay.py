@@ -15,9 +15,8 @@ def generate_positions_real_env():
             all_centers.append([x, y, z_pos])
     all_centers = np.array(all_centers)
 
-    spk_indices = [0, 3, 20, 23, 9, 10, 13, 14]  # all_centersのindex
+    spk_indices = [0, 3, 20, 23, 9, 10, 13, 14]
     tx_pos = all_centers[spk_indices]
-
     num_channels = 8
     radius = 0.0365
     num_speakers = len(spk_indices)
@@ -40,36 +39,23 @@ def generate_positions_real_env():
 
     return tx_pos, mic_centers_per_spk, rx_pos, spk_indices
 
-# 数式による index 変換
-def wav_index_to_all_centers_index(wav_idx: int) -> int:
-    y = (wav_idx - 1) % 6
-    x = (wav_idx - 1) // 6
-    return y * 4 + x
-
 def all_centers_index_to_wav_index(center_idx: int) -> int:
     y = center_idx // 4
     x = center_idx % 4
     return x * 6 + y + 1
 
-# メイン処理
-def convert_ir_to_npz(ir_dir, output_dir, ir_start=9600, ir_len=1600):
+def analyze_ir_delay(ir_dir, ir_start=9600, ir_len=1600, threshold=0.05):
     tx_pos, mic_centers_per_spk, rx_pos, spk_indices = generate_positions_real_env()
     ir_dir = Path(ir_dir)
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     num_speakers = len(spk_indices)
     num_channels = 8
     mic_per_spk = 23  # 24 - 1
 
+    delay_indices = []
+
     for s_idx, spk_idx in enumerate(spk_indices):
-        tx_output_path = output_dir / f"tx_{s_idx}"
-        tx_output_path.mkdir(parents=True, exist_ok=True)
-
         for mic_idx in range(mic_per_spk):
-            rx_folder = tx_output_path / f"rx_{mic_idx}"
-            rx_folder.mkdir(exist_ok=True)
-
             for ch in range(num_channels):
                 rx_index = [i for i in range(24) if i != spk_idx][mic_idx]
 
@@ -85,15 +71,16 @@ def convert_ir_to_npz(ir_dir, output_dir, ir_start=9600, ir_len=1600):
                 ir, sr = sf.read(wav_path)
                 ir = ir[ir_start:ir_start+ir_len]
 
-                np.savez(
-                    rx_folder / f"ir_{str(ch).zfill(6)}.npz",
-                    ir=np.array(ir),
-                    position_rx=rx_pos[s_idx, mic_idx, ch],
-                    position_tx=tx_pos[s_idx]
-                )
+                above_thresh = np.where(np.abs(ir) > threshold)[0]
+                if len(above_thresh) == 0:
+                    continue  # 無視
+                first_idx = above_thresh[0]
+                delay_indices.append(first_idx)
 
-    print(f"sampling_rate: {sr}")
-    print(f"ir_len: {ir_len}")
+    delay_indices = np.array(delay_indices)
+    print(f"サンプル数: {len(delay_indices)}")
+    print(f"初回閾値超えインデックスの平均: {np.mean(delay_indices):.2f}")
+    print(f"標準偏差: {np.std(delay_indices):.2f}")
 
 if __name__ == "__main__":
-    convert_ir_to_npz("../ir_peak_same", "./outputs/real_exp_8720", ir_start=8720, ir_len=1600)
+    analyze_ir_delay("../ir_peak_same", ir_start=8720, ir_len=1600, threshold=0.05)
