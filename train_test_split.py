@@ -16,9 +16,9 @@ def collect_ir_paths(base_dir: Path):
             tx_rx_dict[key].extend(npz_files)
     return tx_rx_dict
 
-def split_train_test(tx_rx_dict, test_ratio=0.2, seed=42):
+def split_train_test(tx_rx_dict, base_dir: Path, test_ratio=0.2, seed=42):
     """
-    tx_rx単位でtrain/testに分割する。
+    tx_rx単位でtrain/testに分割し、すべて base_dir からの相対パスに変換する。
     """
     random.seed(seed)
     keys = list(tx_rx_dict.keys())
@@ -29,8 +29,8 @@ def split_train_test(tx_rx_dict, test_ratio=0.2, seed=42):
     train_keys = set(keys[num_test:])
 
     split = {
-        "train": [str(p) for k in train_keys for p in tx_rx_dict[k]],
-        "test": [str(p) for k in test_keys for p in tx_rx_dict[k]],
+        "train": [str(p.relative_to(base_dir)) for k in train_keys for p in tx_rx_dict[k]],
+        "test": [str(p.relative_to(base_dir)) for k in test_keys for p in tx_rx_dict[k]],
     }
     return split
 
@@ -41,7 +41,7 @@ def save_split(split, output_path):
 
 # 実行例
 if __name__ == "__main__":
-    outputs_dir = Path("./outputs/real_exp_8720")  # 適宜パスを変更してください
+    outputs_dir = Path("./outputs/real_env_avr_16kHz")  # 適宜パスを変更してください
     tx_rx_dict = collect_ir_paths(outputs_dir)
-    split = split_train_test(tx_rx_dict, test_ratio=0.2)
+    split = split_train_test(tx_rx_dict, base_dir=outputs_dir, test_ratio=0.1)
     save_split(split, outputs_dir / "train_test_split.pkl")
